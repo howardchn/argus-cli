@@ -1,0 +1,6 @@
+{
+	"ImportPath": "github.com/howardchn/argus-cli",
+	"GoVersion": "go1.11",
+	"GodepVersion": "v80",
+	"Deps": []
+}
