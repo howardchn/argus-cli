@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/howardchn/argus-cli/pkg/conf"
 	lmv1 "github.com/logicmonitor/lm-sdk-go"
+	"net/url"
 )
 
 func newApiClient(lmconf *conf.LMConf) *lmv1.DefaultApi {
@@ -34,10 +35,65 @@ func NewLMClient(lmConf *conf.LMConf) *LMClient {
 	}
 }
 
+func (lmClient *LMClient) DeleteDeviceGroup() error {
+	restDeviceGroup, err := lmClient.findDeviceGroup()
+	if err != nil {
+		return err
+	} else if &restDeviceGroup != nil {
+		_, _, deletionErr := lmClient.apiClient.DeleteDeviceGroupById(restDeviceGroup.Id, true)
+		return deletionErr
+	} else {
+		return nil
+	}
+}
+
+func (lmClient *LMClient) DeleteCollectorGroup() error {
+	collectorGroup, err := lmClient.findCollectorGroup()
+	if err != nil {
+		return err
+	}
+
+	collectorIds, err := lmClient.getCollectorIds(collectorGroup)
+	if err != nil {
+		return err
+	}
+
+	for _, id := range collectorIds {
+		_, _, err := lmClient.apiClient.DeleteCollectorById(id)
+		if err != nil {
+			fmt.Printf("delete collector <%d> failed, msg=%v", id, err)
+		}
+	}
+
+	return nil
+}
+
+func (lmClient *LMClient) getCollectorIds(collectorGroup *lmv1.RestCollectorGroup) ([]int32, error) {
+	filter := fmt.Sprintf("collectorGroupId:%v", &collectorGroup.Id)
+	restRes, _, err := lmClient.apiClient.GetCollectorList("", -1, 0, filter)
+	if err != nil {
+		return nil, fmt.Errorf("get collector ids from group <%s>, group id <%d> failed", &collectorGroup.Name, &collectorGroup.Id)
+	}
+
+	var collectorIds []int32
+	for _, item := range restRes.Data.Items {
+		collectorIds = append(collectorIds, item.Id)
+	}
+
+	return collectorIds, nil
+}
+
+func getGroupName(cluster string) string {
+	groupName := fmt.Sprintf("Kubernetes Cluster: %s", cluster)
+	groupName = url.QueryEscape(groupName)
+	return groupName
+}
+
 func (lmClient *LMClient) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
 	api := lmClient.apiClient
+	groupName := getGroupName(lmClient.option.Cluster)
 
-	restResp, _, err := api.GetDeviceGroupList("name,id,parentId", -1, 0, fmt.Sprintf("name:%s", lmClient.option.Cluster))
+	restResp, _, err := api.GetDeviceGroupList("name,id,parentId", -1, 0, fmt.Sprintf("name:%s", groupName))
 	if err != nil {
 		return nil, fmt.Errorf("get device group <%s> failed. msg: %v", lmClient.option.Cluster, err)
 	}
@@ -53,18 +109,14 @@ func (lmClient *LMClient) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
 	return deviceGroup, nil
 }
 
-func (lmClient *LMClient) DeleteDeviceGroup() error {
-	restDeviceGroup, err := lmClient.findDeviceGroup()
-	if err != nil {
-		return err
-	} else if &restDeviceGroup != nil {
-		_, _, deletionErr := lmClient.apiClient.DeleteDeviceGroupById(restDeviceGroup.Id, true)
-		return deletionErr
-	} else {
-		return nil
+func (lmClient *LMClient) findCollectorGroup() (*lmv1.RestCollectorGroup, error) {
+	filter := fmt.Sprintf("name:%s", lmClient.option.Cluster)
+	restResp, _, err := lmClient.apiClient.GetCollectorGroupList("", -1, 0, filter)
+	if err != nil || len(restResp.Data.Items) == 0 {
+		return nil, fmt.Errorf("get collector group <%s> failed", lmClient.option.Cluster)
 	}
-}
 
-func (lmClient *LMClient) DeleteCollectorGroup() {
+	collectorGroup := &restResp.Data.Items[0]
+	return collectorGroup, nil
 
 }

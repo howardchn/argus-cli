@@ -25,7 +25,7 @@ func init() {
 func main() {
 	flag.Parse()
 	lmConf := &conf.LMConf{AccessId: accessId, AccessKey: accessKey, Account: account, Cluster: clusterName, ParentId: int32(parentId)}
-	argusClient := argusex.NewArgusClient(lmConf)
+	argusClient := utils.NewArgusClient(lmConf)
 	argusClient.LMClient.DeleteCollectorGroup()
 
 }

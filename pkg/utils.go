@@ -1,4 +1,4 @@
-package argusex
+package utils
 
 import (
 	"github.com/howardchn/argus-cli/pkg/conf"
