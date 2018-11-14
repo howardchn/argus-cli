@@ -7,15 +7,15 @@ import (
 	"net/url"
 )
 
-func newApiClient(lmconf *conf.LMConf) *lmv1.DefaultApi {
+func newApiClient(conf *conf.LMConf) *lmv1.DefaultApi {
 	config := lmv1.NewConfiguration()
 	config.APIKey = map[string]map[string]string{
 		"Authorization": {
-			"AccessID":  lmconf.AccessId,
-			"AccessKey": lmconf.AccessKey,
+			"AccessID":  conf.AccessId,
+			"AccessKey": conf.AccessKey,
 		},
 	}
-	config.BasePath = "https://" + lmconf.Account + ".logicmonitor.com/santaba/rest"
+	config.BasePath = "https://" + conf.Account + ".logicmonitor.com/santaba/rest"
 
 	api := lmv1.NewDefaultApi()
 	api.Configuration = config
@@ -72,7 +72,7 @@ func (lmClient *LMClient) getCollectorIds(collectorGroup *lmv1.RestCollectorGrou
 	filter := fmt.Sprintf("collectorGroupId:%v", &collectorGroup.Id)
 	restRes, _, err := lmClient.apiClient.GetCollectorList("", -1, 0, filter)
 	if err != nil {
-		return nil, fmt.Errorf("get collector ids from group <%s>, group id <%d> failed", &collectorGroup.Name, &collectorGroup.Id)
+		return nil, fmt.Errorf("get collector ids from group <%v>, group id <%d> failed", &collectorGroup.Name, &collectorGroup.Id)
 	}
 
 	var collectorIds []int32
