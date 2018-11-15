@@ -1,4 +1,4 @@
-package santaba
+package lm
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-func newApiClient(conf *conf.LMConf) *lmv1.DefaultApi {
+func newLMApi(conf *conf.LMConf) *lmv1.DefaultApi {
 	config := lmv1.NewConfiguration()
 	config.APIKey = map[string]map[string]string{
 		"Authorization": {
@@ -15,7 +15,7 @@ func newApiClient(conf *conf.LMConf) *lmv1.DefaultApi {
 			"AccessKey": conf.AccessKey,
 		},
 	}
-	config.BasePath = "https://" + conf.Account + ".logicmonitor.com/santaba/rest"
+	config.BasePath = "https://" + conf.Account + ".logicmonitor.com/lm/rest"
 
 	api := lmv1.NewDefaultApi()
 	api.Configuration = config
@@ -23,43 +23,58 @@ func newApiClient(conf *conf.LMConf) *lmv1.DefaultApi {
 	return api
 }
 
-type LMClient struct {
+type Client struct {
 	option    *conf.LMConf
 	apiClient *lmv1.DefaultApi
 }
 
-func NewLMClient(lmConf *conf.LMConf) *LMClient {
-	return &LMClient{
-		lmConf,
-		newApiClient(lmConf),
+func NewClient(conf *conf.LMConf) *Client {
+	return &Client{
+		conf,
+		newLMApi(conf),
 	}
 }
 
-func (lmClient *LMClient) DeleteDeviceGroup() error {
-	restDeviceGroup, err := lmClient.findDeviceGroup()
+func (client *Client) Uninstall() error {
+	var err error
+	err = client.deleteDeviceGroup()
+	if err != nil {
+		return err
+	}
+
+	err = client.deleteCollectorGroup()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *Client) deleteDeviceGroup() error {
+	restDeviceGroup, err := client.findDeviceGroup()
 	if err != nil {
 		return err
 	} else if &restDeviceGroup != nil {
-		_, _, deletionErr := lmClient.apiClient.DeleteDeviceGroupById(restDeviceGroup.Id, true)
+		_, _, deletionErr := client.apiClient.DeleteDeviceGroupById(restDeviceGroup.Id, true)
 		return deletionErr
 	} else {
 		return nil
 	}
 }
 
-func (lmClient *LMClient) DeleteCollectorGroup() error {
-	collectorGroup, err := lmClient.findCollectorGroup()
+func (client *Client) deleteCollectorGroup() error {
+	collectorGroup, err := client.findCollectorGroup()
 	if err != nil {
 		return err
 	}
 
-	collectorIds, err := lmClient.getCollectorIds(collectorGroup)
+	collectorIds, err := client.getCollectorIds(collectorGroup)
 	if err != nil {
 		return err
 	}
 
 	for _, id := range collectorIds {
-		_, _, err := lmClient.apiClient.DeleteCollectorById(id)
+		_, _, err := client.apiClient.DeleteCollectorById(id)
 		if err != nil {
 			fmt.Printf("delete collector <%d> failed, msg=%v", id, err)
 		}
@@ -68,9 +83,9 @@ func (lmClient *LMClient) DeleteCollectorGroup() error {
 	return nil
 }
 
-func (lmClient *LMClient) getCollectorIds(collectorGroup *lmv1.RestCollectorGroup) ([]int32, error) {
+func (client *Client) getCollectorIds(collectorGroup *lmv1.RestCollectorGroup) ([]int32, error) {
 	filter := fmt.Sprintf("collectorGroupId:%v", &collectorGroup.Id)
-	restRes, _, err := lmClient.apiClient.GetCollectorList("", -1, 0, filter)
+	restRes, _, err := client.apiClient.GetCollectorList("", -1, 0, filter)
 	if err != nil {
 		return nil, fmt.Errorf("get collector ids from group <%v>, group id <%d> failed", &collectorGroup.Name, &collectorGroup.Id)
 	}
@@ -89,18 +104,18 @@ func getGroupName(cluster string) string {
 	return groupName
 }
 
-func (lmClient *LMClient) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
-	api := lmClient.apiClient
-	groupName := getGroupName(lmClient.option.Cluster)
+func (client *Client) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
+	api := client.apiClient
+	groupName := getGroupName(client.option.Cluster)
 
 	restResp, _, err := api.GetDeviceGroupList("name,id,parentId", -1, 0, fmt.Sprintf("name:%s", groupName))
 	if err != nil {
-		return nil, fmt.Errorf("get device group <%s> failed. msg: %v", lmClient.option.Cluster, err)
+		return nil, fmt.Errorf("get device group <%s> failed. msg: %v", client.option.Cluster, err)
 	}
 
 	var deviceGroup *lmv1.RestDeviceGroup
 	for _, item := range restResp.Data.Items {
-		if item.ParentId == lmClient.option.ParentId {
+		if item.ParentId == client.option.ParentId {
 			deviceGroup = &item
 			break
 		}
@@ -109,14 +124,13 @@ func (lmClient *LMClient) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
 	return deviceGroup, nil
 }
 
-func (lmClient *LMClient) findCollectorGroup() (*lmv1.RestCollectorGroup, error) {
-	filter := fmt.Sprintf("name:%s", lmClient.option.Cluster)
-	restResp, _, err := lmClient.apiClient.GetCollectorGroupList("", -1, 0, filter)
+func (client *Client) findCollectorGroup() (*lmv1.RestCollectorGroup, error) {
+	filter := fmt.Sprintf("name:%s", client.option.Cluster)
+	restResp, _, err := client.apiClient.GetCollectorGroupList("", -1, 0, filter)
 	if err != nil || len(restResp.Data.Items) == 0 {
-		return nil, fmt.Errorf("get collector group <%s> failed", lmClient.option.Cluster)
+		return nil, fmt.Errorf("get collector group <%s> failed", client.option.Cluster)
 	}
 
 	collectorGroup := &restResp.Data.Items[0]
 	return collectorGroup, nil
-
 }

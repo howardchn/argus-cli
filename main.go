@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/howardchn/argus-cli/pkg"
 	"github.com/howardchn/argus-cli/pkg/conf"
 )
@@ -24,8 +25,13 @@ func init() {
 
 func main() {
 	flag.Parse()
-	lmConf := &conf.LMConf{AccessId: accessId, AccessKey: accessKey, Account: account, Cluster: clusterName, ParentId: int32(parentId)}
-	argusClient := utils.NewArgusClient(lmConf)
-	argusClient.LMClient.DeleteCollectorGroup()
+	conf := &conf.LMConf{AccessId: accessId, AccessKey: accessKey, Account: account, Cluster: clusterName, ParentId: int32(parentId)}
+	client := uninstaller.NewClient(conf)
+	err := client.Uninstall()
+	if err != nil {
+		fmt.Printf("uninstall failed. err = %v\n", err)
+		return
+	}
 
+	fmt.Println("uninstall success")
 }
