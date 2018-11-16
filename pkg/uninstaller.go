@@ -23,14 +23,18 @@ func (client *Client) Uninstall() error {
 	var err error
 	err = client.LMClient.Uninstall()
 	if err != nil {
-		log.Println("lm uninstall failed")
+		log.Panicln("SB uninstall failed", err)
 		return err
+	} else {
+		log.Println("SB uninstall success")
 	}
 
 	err = client.HelmClient.Uninstall()
 	if err != nil {
-		log.Println("helm uninstall failed")
+		log.Panicln("helm uninstall failed", err)
 		return err
+	} else {
+		log.Panicln("helm uninstall success")
 	}
 
 	return nil

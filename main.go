@@ -35,3 +35,5 @@ func main() {
 
 	fmt.Println("uninstall success")
 }
+
+//go run main.go --accessId="6j7JCyhCB86bhU3uQS7v" --accessKey="5gTM^JWT45U7^c2]i~%f%V438!^2-I(4J6Z3KIZ9" --clusterName="cluster-anderson7" --account="qauat" --parentId=1
