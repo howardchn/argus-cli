@@ -119,8 +119,8 @@ func (client *Client) deleteCollectorById(id int32) error {
 	collectorResponse, _, err1 := client.apiClient.DeleteCollectorById(id)
 	if err1 != nil {
 		log.Panicf("delete collector <%d> failed, err <%v>\n", id, err1)
-	} else if collectorResponse.Errmsg != "" {
-		errMsg := fmt.Sprintf("delete collector <%d> failed, err <%v>\n", id, err1)
+	} else if collectorResponse.Errmsg != "OK" {
+		errMsg := fmt.Sprintf("delete collector <%d> failed, err <%v>\n", id, collectorResponse.Errmsg)
 		err1 = fmt.Errorf(errMsg)
 		log.Panicf(errMsg)
 	}
