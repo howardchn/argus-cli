@@ -3,25 +3,25 @@ package uninstaller
 import (
 	"github.com/howardchn/argus-cli/pkg/conf"
 	"github.com/howardchn/argus-cli/pkg/helm"
-	"github.com/howardchn/argus-cli/pkg/lm"
+	"github.com/howardchn/argus-cli/pkg/rest"
 	"log"
 )
 
 type Client struct {
-	LMClient   *lm.Client
+	RestClient *rest.Client
 	HelmClient *helm.Client
 }
 
 func NewClient(conf *conf.LMConf) *Client {
 	return &Client{
-		lm.NewClient(conf),
+		rest.NewClient(conf),
 		helm.NewClient(conf),
 	}
 }
 
-func (client *Client) Uninstall() error {
+func (client *Client) Clean() error {
 	var err error
-	err = client.LMClient.Uninstall()
+	err = client.RestClient.Clean()
 	if err != nil {
 		log.Panicln("-- LM uninstall failed --", err)
 		return err
@@ -30,7 +30,7 @@ func (client *Client) Uninstall() error {
 	}
 
 	log.Println()
-	err = client.HelmClient.Uninstall()
+	err = client.HelmClient.Clean()
 	if err != nil {
 		log.Panicln("-- helm uninstall failed --", err)
 		return err

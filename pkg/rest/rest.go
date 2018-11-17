@@ -1,4 +1,4 @@
-package lm
+package rest
 
 import (
 	"fmt"
@@ -7,6 +7,11 @@ import (
 	"log"
 	"net/url"
 )
+
+type Client struct {
+	option    *conf.LMConf
+	apiClient *lmv1.DefaultApi
+}
 
 func newLMApi(conf *conf.LMConf) *lmv1.DefaultApi {
 	config := lmv1.NewConfiguration()
@@ -24,11 +29,6 @@ func newLMApi(conf *conf.LMConf) *lmv1.DefaultApi {
 	return api
 }
 
-type Client struct {
-	option    *conf.LMConf
-	apiClient *lmv1.DefaultApi
-}
-
 func NewClient(conf *conf.LMConf) *Client {
 	return &Client{
 		conf,
@@ -36,7 +36,7 @@ func NewClient(conf *conf.LMConf) *Client {
 	}
 }
 
-func (client *Client) Uninstall() error {
+func (client *Client) Clean() error {
 	var err error
 	log.Println("deleting devices and groups")
 	err = client.deleteDeviceGroup()
