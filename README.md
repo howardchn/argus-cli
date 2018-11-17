@@ -55,6 +55,6 @@ make
 ```
 
 ## Contact
-[Email](mailto:howardch@outlook.com)
-[Linkedin](https://www.linkedin.com/in/howard-chen-328493142/)
+* [Email](mailto:howardch@outlook.com)
+* [Linkedin](https://www.linkedin.com/in/howard-chen-328493142/)
 
