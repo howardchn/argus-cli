@@ -5,6 +5,7 @@ import (
 	"github.com/howardchn/argus-cli/pkg/helm"
 	"github.com/howardchn/argus-cli/pkg/rest"
 	"log"
+	"strings"
 )
 
 type Client struct {
@@ -19,23 +20,28 @@ func NewClient(conf *conf.LMConf) *Client {
 	}
 }
 
-func (client *Client) Clean() error {
+func (client *Client) Clean(mode string) error {
 	var err error
-	err = client.RestClient.Clean()
-	if err != nil {
-		log.Panicln("-- LM uninstall failed --", err)
-		return err
-	} else {
-		log.Println("-- LM uninstall success --")
+	mode = strings.ToLower(mode)
+
+	if mode == "all" || mode == "rest" {
+		err = client.RestClient.Clean()
+		if err != nil {
+			log.Panicln("-- LM uninstall failed --", err)
+			return err
+		} else {
+			log.Println("-- LM uninstall success --")
+		}
 	}
 
-	log.Println()
-	err = client.HelmClient.Clean()
-	if err != nil {
-		log.Panicln("-- helm uninstall failed --", err)
-		return err
-	} else {
-		log.Panicln("-- helm uninstall success --")
+	if mode == "all" || mode == "helm" {
+		err = client.HelmClient.Clean()
+		if err != nil {
+			log.Panicln("-- helm uninstall failed --", err)
+			return err
+		} else {
+			log.Panicln("-- helm uninstall success --")
+		}
 	}
 
 	return nil
