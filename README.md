@@ -15,7 +15,7 @@ So this utility helps to clean those resources for you.
 ## Configurations
 An example:
 ```
-$ ./argus-cli --accessId="[Access ID]" --accessKey="[Access Key]" --clusterName="[Cluster Name]" --account="[Company Name]" --parentId=[Parent Group Id]
+$ ./argus-cli uninstall --accessId="[Access ID]" --accessKey="[Access Key]" --clusterName="[Cluster Name]" --account="[Company Name]" --parentId=[Parent Group Id]
 ```
 
 ### Require Values:
