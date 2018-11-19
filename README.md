@@ -81,6 +81,7 @@ Feel free to clone this project and build for your specific OS.
 
 ### Build Detail
 Use command to build for various platform
+
 Platform | Build Command
 ---------|--------------
 macOS | CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o argus-cli-darwin main.go
