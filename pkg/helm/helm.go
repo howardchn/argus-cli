@@ -22,7 +22,7 @@ func (client *Client) Clean() error {
 	log.Println("deleting argus")
 	err = client.deleteArgus()
 	if newErr := handleError(err, "argus"); newErr != nil {
-		log.Panicln(newErr)
+		log.Println(newErr)
 		return newErr
 	} else {
 		log.Println("deleted argus")
@@ -31,7 +31,7 @@ func (client *Client) Clean() error {
 	log.Println("deleting collectorset-controller")
 	err = client.deleteCollectorSetController()
 	if newErr := handleError(err, "collectorset-controller"); newErr != nil {
-		log.Panicln(newErr)
+		log.Println(newErr)
 		return newErr
 	} else {
 		log.Println("deleted collectorset-controller")

@@ -41,7 +41,7 @@ func (client *Client) Clean() error {
 	log.Println("deleting devices and groups")
 	err = client.deleteDeviceGroup()
 	if err != nil {
-		log.Panicln("delete device group failed")
+		log.Println("delete device group failed")
 		return err
 	} else {
 		log.Println("deleted devices and groups")
@@ -50,7 +50,7 @@ func (client *Client) Clean() error {
 	log.Println("deleting collectors and groups")
 	err = client.deleteCollectorGroup()
 	if err != nil {
-		log.Panicln("delete collector group failed")
+		log.Println("delete collector group failed")
 		return err
 	} else {
 		log.Println("deleted collectors and groups")
@@ -88,7 +88,7 @@ func (client *Client) deleteCollectorGroup() error {
 	for _, id := range collectorIds {
 		err := client.deleteCollectorById(id)
 		if err != nil {
-			log.Panicf("delete collector <%d> failed, msg=%v\n", id, err)
+			log.Printf("delete collector <%d> failed, msg=%v\n", id, err)
 			allCollectorDeleted = false
 		}
 	}
@@ -103,26 +103,26 @@ func (client *Client) deleteCollectorGroup() error {
 
 func (client *Client) deleteCollectorById(id int32) error {
 	filter := fmt.Sprintf("currentCollectorId:%d", id)
-	restResponse, _, err := client.apiClient.GetDeviceList("id", 1, 0, filter)
+	restResponse, _, err := client.apiClient.GetDeviceList("id", -1, 0, filter)
 	if err != nil {
-		log.Panicf("find device by collector <%d> failed, err <%v>\n", id, err)
+		log.Printf("find device by collector <%d> failed, err <%v>\n", id, err)
 		return err
 	}
 
 	deviceIds := getDeviceIds(&restResponse.Data)
 	deleteDeviceErr := client.deleteDevicesByIds(deviceIds)
 	if deleteDeviceErr != nil {
-		log.Panicln("devices deletion failed, cannot continue to delete its collector", deleteDeviceErr)
+		log.Println("devices deletion failed, cannot continue to delete its collector", deleteDeviceErr)
 		return deleteDeviceErr
 	}
 
 	collectorResponse, _, err1 := client.apiClient.DeleteCollectorById(id)
 	if err1 != nil {
-		log.Panicf("delete collector <%d> failed, err <%v>\n", id, err1)
+		log.Printf("delete collector <%d> failed, err <%v>\n", id, err1)
 	} else if collectorResponse.Errmsg != "OK" {
 		errMsg := fmt.Sprintf("delete collector <%d> failed, err <%v>\n", id, collectorResponse.Errmsg)
 		err1 = fmt.Errorf(errMsg)
-		log.Panicf(errMsg)
+		log.Printf(errMsg)
 	}
 
 	return err1

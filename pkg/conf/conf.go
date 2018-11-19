@@ -1,9 +1,10 @@
 package conf
 
 type LMConf struct {
-	AccessId  string
-	AccessKey string
-	Account   string
-	Cluster   string
-	ParentId  int32
+	AccessId  string `yaml:"accessId"`
+	AccessKey string `yaml:"accessKey"`
+	Account   string `yaml:"account"`
+	Cluster   string `yaml:"cluster"`
+	ParentId  int32  `yaml:"parentId"`
+	Mode      string `yaml:"mode"`
 }

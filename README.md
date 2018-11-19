@@ -13,48 +13,89 @@ The original argus project is only allowing to install resources on your kuberne
 So this utility helps to clean those resources for you.
 
 ## Configurations
-An example:
+
+
+
+### Usage: argus-cli:
+```
+Usage:
+  argus-cli [command]
+
+Available Commands:
+  help        Help about any command
+  uninstall   uninstall argus related resources
+  version     argus-cli version
+
+Flags:
+  -i, --accessId string    access id that is generated from santaba
+  -k, --accessKey string   access key that is generated from santaba
+  -h, --help               help for argus-cli
+```
+
+### Usage: argus-cli uninstall
+```
+Usage:
+  argus-cli uninstall [flags]
+
+Flags:
+  -a, --account string    account name
+  -c, --cluster string    cluster name
+  -f, --confFile string   configure file (*.yaml)
+  -h, --help              help for uninstall
+  -m, --mode string       uninstall mode: [rest|helm|all], default: all (default "all")
+  -g, --parentId int32    parent group id, default: 1 (default 1)
+
+Global Flags:
+  -i, --accessId string    access id that is generated from santaba
+  -k, --accessKey string   access key that is generated from santaba
+```
+
+Example:
 ```
 $ ./argus-cli uninstall --accessId="[Access ID]" --accessKey="[Access Key]" --clusterName="[Cluster Name]" --account="[Company Name]" --parentId=[Parent Group Id]
 ```
 
-### Require Values:
-* **accessId:** the access id that is generate with your own santaba account from UI portal
-* **accessKey:** the access key that is generate with your own santaba account from UI portal
-* **clusterName:** the cluster name that is used for creating your k8s monitoring. The same configuration as _clusterName_ in [argus configuration](https://logicmonitor.github.io/k8s-argus/docs/configuration/)
-* **account:** the company account for your logicmonitor portal. e.g. _mycompany.logicmonitor.com_, _mycompany_ is the value
+### Usage: argus-cli uninstall -f
+Example:
+```
+$ ./argus-cli uninstall -f ./conf.yaml
+```
 
-### Optional Values:
-* **parentId:** the parent group id for the k8s cluster node is placed in. Default value is 1 that means the root group
+Configuration file format:
+```yaml
+accessId:   [replace with accessId          *required]
+accessKey:  [replace with accessKey         *required]
+account:    [replace with account           *required]
+cluster:    [replace with cluster name      *required]
+parentId:   [replace with parent group id]
+mode:       [replace with mode (all|rest|helm)]
+```
 
 ## Build Executable
 Feel free to clone this project and build for your specific OS.
 
 ### Precondition:
-Setup the go environment on your machine. Refer the [installation instruction](https://golang.org/doc/install).
+1. Setup the go environment on your machine. Refer the [installation instruction](https://golang.org/doc/install).
+2. Kubernetes environment setup.
+3. Helm installed.
 
-### For macOS (darwin)
-```bash
-CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o argus-cli-darwin main.go
-```
+### Build Detail
+Use command to build for various platform
 
-### For Linux
-```bash
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o argus-cli-linux main.go
-```
+Platform | Build Command
+---------|--------------
+macOS | CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o argus-cli main.go
+Linux | CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o argus-cli main.go
+Win   | CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o argus-cli main.go
 
-### For Windows
-```bash
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o argus-cli-win main.go
-```
-
-### Use Makefile
+Use makefile to build for various platform
 ```bash
 # cd to the project
-make
+make darwin
+make linux
+make win
 ```
 
 ## Contact
 * [Email](mailto:howardch@outlook.com)
 * [Linkedin](https://www.linkedin.com/in/howard-chen-328493142/)
-
