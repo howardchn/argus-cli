@@ -9,21 +9,23 @@ import (
 )
 
 type Client struct {
+	Conf       *conf.LMConf
 	RestClient *rest.Client
 	HelmClient *helm.Client
 }
 
 func NewClient(conf *conf.LMConf) *Client {
 	return &Client{
+		conf,
 		rest.NewClient(conf),
 		helm.NewClient(conf),
 	}
 }
 
-func (client *Client) Clean(mode string) error {
-	var err error
-	mode = strings.ToLower(mode)
+func (client *Client) Clean() error {
+	mode := strings.ToLower(client.Conf.Mode)
 
+	var err error
 	if mode == "all" || mode == "rest" {
 		err = client.RestClient.Clean()
 		if err != nil {
