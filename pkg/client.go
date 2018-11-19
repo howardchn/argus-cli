@@ -42,7 +42,7 @@ func (client *Client) Clean() error {
 			log.Panicln("-- helm uninstall failed --", err)
 			return err
 		} else {
-			log.Panicln("-- helm uninstall success --")
+			log.Println("-- helm uninstall success --")
 		}
 	}
 

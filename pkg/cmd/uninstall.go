@@ -48,7 +48,6 @@ func init() {
 	uninstallCmd.Flags().StringVarP(&confFile, "confFile", "f", "", "configure file (*.yaml)")
 	uninstallCmd.MarkFlagRequired("cluster")
 	uninstallCmd.MarkFlagRequired("account")
-	uninstallCmd.MarkFlagRequired("parentId")
 	RootCmd.AddCommand(uninstallCmd)
 }
 

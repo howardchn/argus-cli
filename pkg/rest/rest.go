@@ -103,7 +103,7 @@ func (client *Client) deleteCollectorGroup() error {
 
 func (client *Client) deleteCollectorById(id int32) error {
 	filter := fmt.Sprintf("currentCollectorId:%d", id)
-	restResponse, _, err := client.apiClient.GetDeviceList("id", 1, 0, filter)
+	restResponse, _, err := client.apiClient.GetDeviceList("id", -1, 0, filter)
 	if err != nil {
 		log.Panicf("find device by collector <%d> failed, err <%v>\n", id, err)
 		return err
