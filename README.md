@@ -82,10 +82,10 @@ Feel free to clone this project and build for your specific OS.
 ### Build Detail
 Use command to build for various platform
 Platform | Build Command
----|---
+---------|--------------
 macOS | CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o argus-cli-darwin main.go
 Linux | CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o argus-cli-linux main.go
-Win | CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o argus-cli-win main.go
+Win   | CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o argus-cli-win main.go
 
 Use makefile to build for various platform
 ```bash
