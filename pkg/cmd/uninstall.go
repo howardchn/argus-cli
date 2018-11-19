@@ -46,8 +46,6 @@ func init() {
 	uninstallCmd.Flags().Int32VarP(&parentId, "parentId", "g", 1, "parent group id, default: 1")
 	uninstallCmd.Flags().StringVarP(&mode, "mode", "m", "all", "uninstall mode: [rest|helm|all], default: all")
 	uninstallCmd.Flags().StringVarP(&confFile, "confFile", "f", "", "configure file (*.yaml)")
-	uninstallCmd.MarkFlagRequired("cluster")
-	uninstallCmd.MarkFlagRequired("account")
 	RootCmd.AddCommand(uninstallCmd)
 }
 

@@ -29,7 +29,7 @@ func (client *Client) Clean() error {
 	if mode == "all" || mode == "rest" {
 		err = client.RestClient.Clean()
 		if err != nil {
-			log.Panicln("-- LM uninstall failed --", err)
+			log.Println("-- LM uninstall failed --", err)
 			return err
 		} else {
 			log.Println("-- LM uninstall success --")
@@ -39,7 +39,7 @@ func (client *Client) Clean() error {
 	if mode == "all" || mode == "helm" {
 		err = client.HelmClient.Clean()
 		if err != nil {
-			log.Panicln("-- helm uninstall failed --", err)
+			log.Println("-- helm uninstall failed --", err)
 			return err
 		} else {
 			log.Println("-- helm uninstall success --")
