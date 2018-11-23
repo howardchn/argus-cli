@@ -56,6 +56,14 @@ func (client *Client) Clean() error {
 		log.Println("deleted collectors and groups")
 	}
 
+	log.Println("deleting dashboards and groups")
+	if err := client.deleteDashboardGroup(); err != nil {
+		log.Println("delete dashboard group failed")
+		return err
+	} else {
+		log.Println("deleted dashboards and groups")
+	}
+
 	return nil
 }
 
@@ -126,6 +134,51 @@ func (client *Client) deleteCollectorById(id int32) error {
 	}
 
 	return err1
+}
+
+func (client *Client) deleteDashboardGroup() error {
+	dashboardGroupName := url.QueryEscape(fmt.Sprintf("Kubernetes Cluster: %s Dashboards", client.option.Cluster))
+	filter := fmt.Sprintf("name:%s", dashboardGroupName)
+	dashboardGroups, _, err := client.apiClient.GetDashboardGroupList("id,name", -1, 0, filter)
+	if err != nil {
+		log.Printf("dashboard group <%s> found failed\n", dashboardGroupName)
+		return err
+	}
+
+	for _, d := range dashboardGroups.Data.Items {
+		err := client.deleteDashboardGroupById(d.Id)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	return nil
+}
+
+func (client *Client) deleteDashboardGroupById(gid int32) error {
+	r, _, err := client.apiClient.GetDashboardList("id,name", -1, 0, fmt.Sprintf("groupId:%d", gid))
+	if err != nil {
+		log.Printf("get dashboards from group<%d> failed\n", gid)
+		return err
+	}
+
+	for _, d := range r.Data.Items {
+		r, _, err := client.apiClient.DeleteDashboardById(d.Id)
+		if err != nil {
+			return err
+		} else if r.Errmsg != "OK" {
+			return fmt.Errorf("delete dashboard<%d> failed", d.Id)
+		}
+	}
+
+	deleteGroupResponse, _, err := client.apiClient.DeleteDashboardGroupById(gid)
+	if err != nil {
+		return err
+	} else if deleteGroupResponse.Errmsg != "OK" {
+		return fmt.Errorf("delete dashboard group failed, %v", deleteGroupResponse.Errmsg)
+	}
+
+	return nil
 }
 
 func getDeviceIds(devices *lmv1.RestDevicePagination) []int32 {
