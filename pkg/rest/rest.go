@@ -5,7 +5,6 @@ import (
 	"github.com/howardchn/argus-cli/pkg/conf"
 	lmv1 "github.com/logicmonitor/lm-sdk-go"
 	"log"
-	"net/url"
 )
 
 type Client struct {
@@ -36,32 +35,38 @@ func NewClient(conf *conf.LMConf) *Client {
 	}
 }
 
+func cleanTask(name string, action func() error) error {
+	log.Println("deleting", name)
+	err := action()
+	if err != nil {
+		log.Println(fmt.Sprintf("delete %s failed", name))
+		return err
+	} else {
+		log.Println("deleted", name)
+	}
+
+	return nil
+}
+
 func (client *Client) Clean() error {
-	var err error
-	log.Println("deleting devices and groups")
-	err = client.deleteDeviceGroup()
+	err := cleanTask("devices", func() error { return client.deleteDeviceGroup() })
 	if err != nil {
-		log.Println("delete device group failed")
 		return err
-	} else {
-		log.Println("deleted devices and groups")
 	}
 
-	log.Println("deleting collectors and groups")
-	err = client.deleteCollectorGroup()
+	err = cleanTask("collectors", func() error { return client.deleteCollectorGroup() })
 	if err != nil {
-		log.Println("delete collector group failed")
 		return err
-	} else {
-		log.Println("deleted collectors and groups")
 	}
 
-	log.Println("deleting dashboards and groups")
-	if err := client.deleteDashboardGroup(); err != nil {
-		log.Println("delete dashboard group failed")
+	err = cleanTask("dashboards", func() error { return client.deleteDashboardGroup() })
+	if err != nil {
 		return err
-	} else {
-		log.Println("deleted dashboards and groups")
+	}
+
+	err = cleanTask("services", func() error { return client.deleteServiceGroup() })
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -73,6 +78,18 @@ func (client *Client) deleteDeviceGroup() error {
 		return err
 	} else if restDeviceGroup != nil {
 		_, _, deletionErr := client.apiClient.DeleteDeviceGroupById(restDeviceGroup.Id, true)
+		return deletionErr
+	} else {
+		return nil
+	}
+}
+
+func (client *Client) deleteServiceGroup() error {
+	restServiceGroup, err := client.findServiceGroup()
+	if err != nil {
+		return err
+	} else if restServiceGroup != nil {
+		_, _, deletionErr := client.apiClient.DeleteDeviceGroupById(restServiceGroup.Id, true)
 		return deletionErr
 	} else {
 		return nil
@@ -137,7 +154,7 @@ func (client *Client) deleteCollectorById(id int32) error {
 }
 
 func (client *Client) deleteDashboardGroup() error {
-	dashboardGroupName := url.QueryEscape(fmt.Sprintf("Kubernetes Cluster: %s Dashboards", client.option.Cluster))
+	dashboardGroupName := dashboardGroupName(client.option.Cluster)
 	filter := fmt.Sprintf("name:%s", dashboardGroupName)
 	dashboardGroups, _, err := client.apiClient.GetDashboardGroupList("id,name", -1, 0, filter)
 	if err != nil {
@@ -226,15 +243,30 @@ func (client *Client) getCollectorIds(collectorGroup *lmv1.RestCollectorGroup) (
 	return collectorIds, nil
 }
 
-func getGroupName(cluster string) string {
-	groupName := fmt.Sprintf("Kubernetes Cluster: %s", cluster)
-	groupName = url.QueryEscape(groupName)
-	return groupName
-}
-
 func (client *Client) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
 	api := client.apiClient
-	groupName := getGroupName(client.option.Cluster)
+	groupName := deviceGroupName(client.option.Cluster)
+	filter := fmt.Sprintf("name:%s", groupName)
+
+	restResp, _, err := api.GetDeviceGroupList("name,id,parentId", -1, 0, filter)
+	if err != nil {
+		return nil, fmt.Errorf("get device group <%s> failed. msg: %v", client.option.Cluster, err)
+	}
+
+	var deviceGroup *lmv1.RestDeviceGroup
+	for _, item := range restResp.Data.Items {
+		if item.ParentId == client.option.ParentId {
+			deviceGroup = &item
+			break
+		}
+	}
+
+	return deviceGroup, nil
+}
+
+func (client *Client) findServiceGroup() (*lmv1.RestDeviceGroup, error) {
+	api := client.apiClient
+	groupName := serviceGroupName(client.option.Cluster)
 	filter := fmt.Sprintf("name:%s", groupName)
 
 	restResp, _, err := api.GetDeviceGroupList("name,id,parentId", -1, 0, filter)
@@ -254,7 +286,7 @@ func (client *Client) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
 }
 
 func (client *Client) findCollectorGroup() (*lmv1.RestCollectorGroup, error) {
-	collectorGroupName := client.option.Cluster
+	collectorGroupName := collectorGroupName(client.option.Cluster)
 	filter := fmt.Sprintf("name:%s", collectorGroupName)
 	restResp, _, err := client.apiClient.GetCollectorGroupList("", -1, 0, filter)
 	if err != nil {
