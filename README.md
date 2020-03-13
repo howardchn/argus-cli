@@ -72,7 +72,7 @@ mode:       [replace with mode (all|rest|helm)]
 ```
 
 ## Build Executable
-Feel free to clone this project and build for your specific OS.
+Clone this project and build for your specific OS.
 
 ### Precondition:
 1. Setup the go environment on your machine. Refer the [installation instruction](https://golang.org/doc/install).
@@ -96,6 +96,16 @@ make linux
 make win
 ```
 
-## Contact
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details
+
+## Contributors
+
+<a href="https://github.com/howardchn/argus-cli/graphs/contributors">
+  <img src="https://contributors-img.firebaseapp.com/image?repo=howardchn/argus-cli" />
+</a>
+
+## Maintainer
 * [Email](mailto:howardch@outlook.com)
 * [Linkedin](https://www.linkedin.com/in/howard-chen-328493142/)

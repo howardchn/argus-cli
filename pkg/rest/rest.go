@@ -3,36 +3,28 @@ package rest
 import (
 	"fmt"
 	"github.com/howardchn/argus-cli/pkg/conf"
-	lmv1 "github.com/logicmonitor/lm-sdk-go"
+	"github.com/logicmonitor/lm-sdk-go/client"
+	"github.com/logicmonitor/lm-sdk-go/client/lm"
+	"github.com/logicmonitor/lm-sdk-go/models"
 	"log"
 )
 
 type Client struct {
 	option    *conf.LMConf
-	apiClient *lmv1.DefaultApi
-}
-
-func newLMApi(conf *conf.LMConf) *lmv1.DefaultApi {
-	config := lmv1.NewConfiguration()
-	config.APIKey = map[string]map[string]string{
-		"Authorization": {
-			"AccessID":  conf.AccessId,
-			"AccessKey": conf.AccessKey,
-		},
-	}
-	config.BasePath = "https://" + conf.Account + ".logicmonitor.com/santaba/rest"
-
-	api := lmv1.NewDefaultApi()
-	api.Configuration = config
-
-	return api
+	apiClient *client.LMSdkGo
 }
 
 func NewClient(conf *conf.LMConf) *Client {
+	config := client.NewConfig()
+	config.SetAccessID(&conf.AccessId)
+	config.SetAccessKey(&conf.AccessKey)
+	domain := conf.Account + ".logicmonitor.com"
+	config.SetAccountDomain(&domain)
 	return &Client{
-		conf,
-		newLMApi(conf),
+		option:    conf,
+		apiClient: client.New(config),
 	}
+
 }
 
 func cleanTask(name string, action func() error) error {
@@ -77,7 +69,15 @@ func (client *Client) deleteDeviceGroup() error {
 	if err != nil {
 		return err
 	} else if restDeviceGroup != nil {
-		_, _, deletionErr := client.apiClient.DeleteDeviceGroupById(restDeviceGroup.Id, true)
+		//_, _, deletionErr := client.apiClient.LM.DeleteDeviceGroupById(restDeviceGroup.Id, true)
+		var params = &lm.DeleteDeviceGroupByIDParams{
+			DeleteChildren: nil,
+			DeleteHard:     nil,
+			ID:             restDeviceGroup.ID,
+			Context:        nil,
+			HTTPClient:     nil,
+		}
+		_, deletionErr := client.apiClient.LM.DeleteDeviceGroupByID(params)
 		return deletionErr
 	} else {
 		return nil
@@ -89,7 +89,15 @@ func (client *Client) deleteServiceGroup() error {
 	if err != nil {
 		return err
 	} else if restServiceGroup != nil {
-		_, _, deletionErr := client.apiClient.DeleteDeviceGroupById(restServiceGroup.Id, true)
+		//_, _, deletionErr := client.apiClient.LM.DeleteDeviceGroupById(restServiceGroup.Id, true)
+		var params = &lm.DeleteDeviceGroupByIDParams{
+			DeleteChildren: nil,
+			DeleteHard:     nil,
+			ID:             restServiceGroup.ID,
+			Context:        nil,
+			HTTPClient:     nil,
+		}
+		_, deletionErr := client.apiClient.LM.DeleteDeviceGroupByID(params)
 		return deletionErr
 	} else {
 		return nil
@@ -118,8 +126,13 @@ func (client *Client) deleteCollectorGroup() error {
 		}
 	}
 
+	var params = &lm.DeleteCollectorGroupByIDParams{
+		ID:         collectorGroup.ID,
+		Context:    nil,
+		HTTPClient: nil,
+	}
 	if allCollectorDeleted {
-		_, _, err1 := client.apiClient.DeleteCollectorGroupById(collectorGroup.Id)
+		_, err1 := client.apiClient.LM.DeleteCollectorGroupByID(params)
 		return err1
 	}
 
@@ -128,24 +141,43 @@ func (client *Client) deleteCollectorGroup() error {
 
 func (client *Client) deleteCollectorById(id int32) error {
 	filter := fmt.Sprintf("currentCollectorId:%d", id)
-	restResponse, _, err := client.apiClient.GetDeviceList("id", -1, 0, filter)
+	var fields = "id"
+	var offset int32 = 0
+	var size int32 = -1
+	var params = &lm.GetDeviceListParams{
+		End:           nil,
+		Fields:        &fields,
+		Filter:        &filter,
+		NetflowFilter: nil,
+		Offset:        &offset,
+		Size:          &size,
+		Start:         nil,
+		Context:       nil,
+		HTTPClient:    nil,
+	}
+	restResponse, err := client.apiClient.LM.GetDeviceList(params)
 	if err != nil {
 		log.Printf("find device by collector <%d> failed, err <%v>\n", id, err)
 		return err
 	}
 
-	deviceIds := getDeviceIds(&restResponse.Data)
+	deviceIds := getDeviceIds(restResponse.Payload)
 	deleteDeviceErr := client.deleteDevicesByIds(deviceIds)
 	if deleteDeviceErr != nil {
 		log.Println("devices deletion failed, cannot continue to delete its collector", deleteDeviceErr)
 		return deleteDeviceErr
 	}
 
-	collectorResponse, _, err1 := client.apiClient.DeleteCollectorById(id)
+	var dcParams = &lm.DeleteCollectorByIDParams{
+		ID:         id,
+		Context:    nil,
+		HTTPClient: nil,
+	}
+	collectorResponse, err1 := client.apiClient.LM.DeleteCollectorByID(dcParams)
 	if err1 != nil {
 		log.Printf("delete collector <%d> failed, err <%v>\n", id, err1)
-	} else if collectorResponse.Errmsg != "OK" {
-		errMsg := fmt.Sprintf("delete collector <%d> failed, err <%v>\n", id, collectorResponse.Errmsg)
+	} else if collectorResponse.Error() != "OK" {
+		errMsg := fmt.Sprintf("delete collector <%d> failed, err <%v>\n", id, collectorResponse.Error())
 		err1 = fmt.Errorf(errMsg)
 		log.Printf(errMsg)
 	}
@@ -156,14 +188,25 @@ func (client *Client) deleteCollectorById(id int32) error {
 func (client *Client) deleteDashboardGroup() error {
 	dashboardGroupName := dashboardGroupName(client.option.Cluster)
 	filter := fmt.Sprintf("name:%s", dashboardGroupName)
-	dashboardGroups, _, err := client.apiClient.GetDashboardGroupList("id,name", -1, 0, filter)
+	var fields = "id,name"
+	var offset int32 = 0
+	var size int32 = -1
+	var params = &lm.GetDashboardGroupListParams{
+		Fields:     &fields,
+		Filter:     &filter,
+		Offset:     &offset,
+		Size:       &size,
+		Context:    nil,
+		HTTPClient: nil,
+	}
+	dashboardGroups, err := client.apiClient.LM.GetDashboardGroupList(params)
 	if err != nil {
 		log.Printf("dashboard group <%s> found failed\n", dashboardGroupName)
 		return err
 	}
 
-	for _, d := range dashboardGroups.Data.Items {
-		err := client.deleteDashboardGroupById(d.Id)
+	for _, d := range dashboardGroups.Payload.Items {
+		err := client.deleteDashboardGroupById(d.ID)
 		if err != nil {
 			log.Println(err)
 		}
@@ -173,35 +216,48 @@ func (client *Client) deleteDashboardGroup() error {
 }
 
 func (client *Client) deleteDashboardGroupById(gid int32) error {
-	r, _, err := client.apiClient.GetDashboardList("id,name", -1, 0, fmt.Sprintf("groupId:%d", gid))
+
+	filter := fmt.Sprintf("groupId:%d", gid)
+	var fields = "id,name"
+	var offset int32 = 0
+	var size int32 = -1
+	var params = &lm.GetDashboardListParams{
+		Fields:     &fields,
+		Filter:     &filter,
+		Offset:     &offset,
+		Size:       &size,
+		Context:    nil,
+		HTTPClient: nil,
+	}
+	r, err := client.apiClient.LM.GetDashboardList(params)
 	if err != nil {
 		log.Printf("get dashboards from group<%d> failed\n", gid)
 		return err
 	}
 
-	for _, d := range r.Data.Items {
-		r, _, err := client.apiClient.DeleteDashboardById(d.Id)
+	for _, d := range r.Payload.Items {
+		r, err := client.apiClient.LM.DeleteDashboardByID(&lm.DeleteDashboardByIDParams{ID: d.ID})
 		if err != nil {
 			return err
-		} else if r.Errmsg != "OK" {
-			return fmt.Errorf("delete dashboard<%d> failed", d.Id)
+		} else if r.Error() != "OK" {
+			return fmt.Errorf("delete dashboard<%d> failed", d.ID)
 		}
 	}
 
-	deleteGroupResponse, _, err := client.apiClient.DeleteDashboardGroupById(gid)
+	deleteGroupResponse, err := client.apiClient.LM.DeleteDashboardGroupByID(&lm.DeleteDashboardGroupByIDParams{ID: gid})
 	if err != nil {
 		return err
-	} else if deleteGroupResponse.Errmsg != "OK" {
-		return fmt.Errorf("delete dashboard group failed, %v", deleteGroupResponse.Errmsg)
+	} else if deleteGroupResponse.Error() != "OK" {
+		return fmt.Errorf("delete dashboard group failed, %v", deleteGroupResponse.Error())
 	}
 
 	return nil
 }
 
-func getDeviceIds(devices *lmv1.RestDevicePagination) []int32 {
+func getDeviceIds(devices *models.DevicePaginationResponse) []int32 {
 	var ids []int32
 	for _, d := range devices.Items {
-		ids = append(ids, d.Id)
+		ids = append(ids, d.ID)
 	}
 
 	return ids
@@ -215,7 +271,7 @@ func (client *Client) deleteDevicesByIds(deviceIds []int32) error {
 
 	var errDeviceIds []string
 	for _, id := range deviceIds {
-		_, _, err := client.apiClient.DeleteDevice(id)
+		_, err := client.apiClient.LM.DeleteDeviceByID(&lm.DeleteDeviceByIDParams{ID:id})
 		if err != nil {
 			errDeviceIds = append(errDeviceIds, fmt.Sprintf("%d, %v", id, err))
 		}
@@ -228,35 +284,54 @@ func (client *Client) deleteDevicesByIds(deviceIds []int32) error {
 	}
 }
 
-func (client *Client) getCollectorIds(collectorGroup *lmv1.RestCollectorGroup) ([]int32, error) {
-	filter := fmt.Sprintf("collectorGroupId:%v", collectorGroup.Id)
-	restRes, _, err := client.apiClient.GetCollectorList("", -1, 0, filter)
+func (client *Client) getCollectorIds(collectorGroup *models.CollectorGroup) ([]int32, error) {
+	filter := fmt.Sprintf("collectorGroupId:%v", collectorGroup.ID)
+	fields := ""
+	var offset int32 = 0
+	var size int32 = -1
+	var params = &lm.GetCollectorListParams{
+		Fields:     &fields,
+		Filter:     &filter,
+		Offset:     &offset,
+		Size:       &size,
+		Context:    nil,
+		HTTPClient: nil,
+	}
+	restRes, err := client.apiClient.LM.GetCollectorList(params)
 	if err != nil {
-		return nil, fmt.Errorf("get collector ids from group <%v>, group id <%d> failed", collectorGroup.Name, collectorGroup.Id)
+		return nil, fmt.Errorf("get collector ids from group <%v>, group id <%d> failed", collectorGroup.Name, collectorGroup.ID)
 	}
 
 	var collectorIds []int32
-	for _, item := range restRes.Data.Items {
-		collectorIds = append(collectorIds, item.Id)
+	for _, item := range restRes.Payload.Items {
+		collectorIds = append(collectorIds, item.ID)
 	}
 
 	return collectorIds, nil
 }
 
-func (client *Client) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
-	api := client.apiClient
+func (client *Client) findDeviceGroup() (*models.DeviceGroup, error) {
 	groupName := deviceGroupName(client.option.Cluster)
 	filter := fmt.Sprintf("name:%s", groupName)
 
-	restResp, _, err := api.GetDeviceGroupList("name,id,parentId", -1, 0, filter)
+	var fields = "name,id,parentId"
+	var offset int32 = 0
+	var size int32 = -1
+	var params = &lm.GetDeviceGroupListParams{
+		Fields: &fields,
+		Filter: &filter,
+		Offset: &offset,
+		Size:   &size,
+	}
+	restResp, err := client.apiClient.LM.GetDeviceGroupList(params)
 	if err != nil {
 		return nil, fmt.Errorf("get device group <%s> failed. msg: %v", client.option.Cluster, err)
 	}
 
-	var deviceGroup *lmv1.RestDeviceGroup
-	for _, item := range restResp.Data.Items {
-		if item.ParentId == client.option.ParentId {
-			deviceGroup = &item
+	var deviceGroup *models.DeviceGroup
+	for _, item := range restResp.Payload.Items {
+		if item.ParentID == client.option.ParentId {
+			deviceGroup = item
 			break
 		}
 	}
@@ -264,20 +339,29 @@ func (client *Client) findDeviceGroup() (*lmv1.RestDeviceGroup, error) {
 	return deviceGroup, nil
 }
 
-func (client *Client) findServiceGroup() (*lmv1.RestDeviceGroup, error) {
-	api := client.apiClient
+func (client *Client) findServiceGroup() (*models.DeviceGroup, error) {
 	groupName := serviceGroupName(client.option.Cluster)
 	filter := fmt.Sprintf("name:%s", groupName)
 
-	restResp, _, err := api.GetDeviceGroupList("name,id,parentId", -1, 0, filter)
+	var fields = "name,id,parentId"
+	var offset int32 = 0
+	var size int32 = -1
+	var params = &lm.GetDeviceGroupListParams{
+		Fields: &fields,
+		Filter: &filter,
+		Offset: &offset,
+		Size:   &size,
+	}
+
+	restResp, err := client.apiClient.LM.GetDeviceGroupList(params)
 	if err != nil {
 		return nil, fmt.Errorf("get device group <%s> failed. msg: %v", client.option.Cluster, err)
 	}
 
-	var deviceGroup *lmv1.RestDeviceGroup
-	for _, item := range restResp.Data.Items {
-		if item.ParentId == client.option.ParentId {
-			deviceGroup = &item
+	var deviceGroup *models.DeviceGroup
+	for _, item := range restResp.Payload.Items {
+		if item.ParentID == client.option.ParentId {
+			deviceGroup = item
 			break
 		}
 	}
@@ -285,17 +369,28 @@ func (client *Client) findServiceGroup() (*lmv1.RestDeviceGroup, error) {
 	return deviceGroup, nil
 }
 
-func (client *Client) findCollectorGroup() (*lmv1.RestCollectorGroup, error) {
+func (client *Client) findCollectorGroup() (*models.CollectorGroup, error) {
 	collectorGroupName := collectorGroupName(client.option.Cluster)
 	filter := fmt.Sprintf("name:%s", collectorGroupName)
-	restResp, _, err := client.apiClient.GetCollectorGroupList("", -1, 0, filter)
+
+	var fields = ""
+	var offset int32 = 0
+	var size int32 = -1
+	var params = &lm.GetCollectorGroupListParams{
+		Fields: &fields,
+		Filter: &filter,
+		Offset: &offset,
+		Size:   &size,
+	}
+
+	restResp, err := client.apiClient.LM.GetCollectorGroupList(params)
 	if err != nil {
 		return nil, fmt.Errorf("get collector group <%s> failed", collectorGroupName)
 	}
 
-	var collectorGroup *lmv1.RestCollectorGroup = nil
-	if len(restResp.Data.Items) > 0 {
-		collectorGroup = &restResp.Data.Items[0]
+	var collectorGroup *models.CollectorGroup = nil
+	if len(restResp.Payload.Items) > 0 {
+		collectorGroup = restResp.Payload.Items[0]
 	} else {
 		log.Printf("collector group <%s> not found\n", collectorGroupName)
 	}

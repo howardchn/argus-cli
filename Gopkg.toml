@@ -1,0 +1,27 @@
+[[constraint]]
+  name = "github.com/go-resty/resty"
+  revision = "13ff84ebd5bdfa46a342d9edb869e21560a478f8"
+
+[[constraint]]
+  name = "github.com/inconshreveable/mousetrap"
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+
+[[constraint]]
+  name = "github.com/logicmonitor/lm-sdk-go"
+  branch = "v2"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  revision = "fe5e611709b0c57fa4a89136deaa8e1d4004d053"
+
+[[constraint]]
+  name ="github.com/spf13/pflag"
+  revision = "aea12ed6721610dc6ed40141676d7ab0a1dac9e9"
+
+[[constraint]]
+  name = "golang.org/x/net"
+  revision = "03003ca0c849e57b6ea29a4bab8d3cb6e4d568fe"
+
+[[constraint]]
+  name = "gopkg.in/yaml.v2"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
